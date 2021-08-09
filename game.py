@@ -45,6 +45,8 @@ class Player:
         else:
             self.neural_net.input[0].set_value(self.coords[0] - food_coords[0])
             self.neural_net.input[1].set_value(self.coords[1] - food_coords[1])
+            self.neural_net.input[2].set_value(self.velocity[0])
+            self.neural_net.input[3].set_value(self.velocity[1])
 
             if self.neural_net.output[0].get_value() > 0:
                 move_string += 'up'
@@ -68,21 +70,29 @@ class Food():
         pygame.draw.rect(display, (255, 0, 0), (self.coords, (self.f_size, self.f_size)))
 
 class Game:
-    def __init__(self):
+    def __init__(self, playable, neural_net, total_ticks):
+        self.playable = playable
+        self.total_ticks = total_ticks
+        self.tick = 0
         self._running = True
         self.size = self.width, self.height = 1280, 720
-        self._display_surf = pygame.display.set_mode(self.size)
+        if self.playable:
+            self._display_surf = pygame.display.set_mode(self.size)
 
         
 
         self.score = 0
-        self.font = pygame.font.SysFont(None, 24)
+        if self.playable:
+            self.font = pygame.font.SysFont(None, 24)
 
-        neural_net = NeuralNet([2, 10, 10, 4], binary)
+        
         self.player = Player([self.width / 2, self.height / 2], neural_net)
         self.food = Food([rand.uniform(0, self.width), rand.uniform(0, self.height)])
 
-        self.step_size = 0.01
+        if self.playable:
+            self.step_size = 0.01
+        else:
+            self.step_size = 0.5
 
     #check if player is intersecting with food
     def check_food(self):
@@ -115,13 +125,19 @@ class Game:
 
     def on_execute(self):
         while( self._running ):
-            for event in pygame.event.get():
-                self.on_event(event)
+            if self.playable:
+                for event in pygame.event.get():
+                    self.on_event(event)
             self.on_loop()
-            self.on_render()
+            if(self.playable):
+                self.on_render()
+            if self.total_ticks is not None and self.tick == self.total_ticks:
+                self._running = False
+            self.tick += 1
         self.on_cleanup()
+        return self.score
 
 if __name__ == "__main__" :
     pygame.init()
-    theApp = Game()
+    theApp = Game(True, NeuralNet([4, 10, 10, 4], linear), 10000)
     theApp.on_execute()

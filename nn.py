@@ -43,6 +43,15 @@ class NeuralNet:
                     self.input = cur_layer
             last_layer = cur_layer
         self.output = last_layer
+    
+    def get_neuron(self, layer, neuron):
+        layers = [self.output]
+        cur_layer = self.output
+        while cur_layer[0].layer is not None:
+            cur_layer = cur_layer[0].layer
+            layers.insert(0, cur_layer)
+        return layers[layer][neuron]
+
 
 class Neuron:
     def __init__(self, activation, layer = None):
@@ -75,12 +84,12 @@ if __name__ == "__main__":
     out = []
 
     for neuron in test_net.output:
-        out.append(neuron.get_value())
+        out.append(test_net.get_neuron(1, 5).weight)
     print("output before: " + str(out))
 
-    test_net.input[1].set_value(90)
+    test_net.get_neuron(1, 5).weight = 500
 
     out = []
     for neuron in test_net.output:
-        out.append(neuron.get_value())
+        out.append(test_net.get_neuron(1, 5).weight)
     print("output after: " + str(out))
