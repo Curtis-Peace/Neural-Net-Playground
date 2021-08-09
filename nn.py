@@ -68,7 +68,7 @@ class Neuron:
         self.value = value
 
 if __name__ == "__main__":
-    test_net = NeuralNet([2, 20, 4], logistic)
+    test_net = NeuralNet([2, 20, 4], binary)
     test_net.input[0].set_value(4)
     test_net.input[1].set_value(6)
 

@@ -1,16 +1,18 @@
 import pygame
 import random as rand
 from pygame.locals import *
+from nn import *
 
 class Player:
-    def __init__(self, coords):
+    def __init__(self, coords, neural_net):
         self.coords = coords
+        self.neural_net = neural_net
         self.velocity = [0,0]
         self.acceleration = 2
         self.p_size = 10
 
-    def on_loop(self, step_size):
-        self.update_velocity(self.get_move(), step_size)
+    def on_loop(self, step_size, food_coords):
+        self.update_velocity(self.get_move(food_coords), step_size)
         self.update_coords(step_size)
 
 
@@ -28,17 +30,30 @@ class Player:
         if 'right' in move_string:
             self.velocity[0] += self.acceleration * step_size
 
-    def get_move(self):
-        keys = pygame.key.get_pressed()
+    def get_move(self, food_coords):
         move_string = ''
-        if keys[K_w] or keys[K_UP]:
-            move_string += 'up'
-        if keys[K_s] or keys[K_DOWN]:
-            move_string += 'down'
-        if keys[K_a] or keys[K_LEFT]:
-            move_string += 'left'
-        if keys[K_d] or keys[K_RIGHT]:
-            move_string += 'right'
+        if self.neural_net is None:
+            keys = pygame.key.get_pressed()
+            if keys[K_w] or keys[K_UP]:
+                move_string += 'up'
+            if keys[K_s] or keys[K_DOWN]:
+                move_string += 'down'
+            if keys[K_a] or keys[K_LEFT]:
+                move_string += 'left'
+            if keys[K_d] or keys[K_RIGHT]:
+                move_string += 'right'
+        else:
+            self.neural_net.input[0].set_value(self.coords[0] - food_coords[0])
+            self.neural_net.input[1].set_value(self.coords[1] - food_coords[1])
+
+            if self.neural_net.output[0].get_value() > 0:
+                move_string += 'up'
+            if self.neural_net.output[1].get_value() > 0:
+                move_string += 'down'
+            if self.neural_net.output[2].get_value() > 0:
+                move_string += 'left'
+            if self.neural_net.output[3].get_value() > 0:
+                move_string += 'right'
         return move_string
 
     def on_render(self, display):
@@ -58,10 +73,13 @@ class Game:
         self.size = self.width, self.height = 1280, 720
         self._display_surf = pygame.display.set_mode(self.size)
 
+        
+
         self.score = 0
         self.font = pygame.font.SysFont(None, 24)
 
-        self.player = Player([self.width / 2, self.height / 2])
+        neural_net = NeuralNet([2, 10, 10, 4], binary)
+        self.player = Player([self.width / 2, self.height / 2], neural_net)
         self.food = Food([rand.uniform(0, self.width), rand.uniform(0, self.height)])
 
         self.step_size = 0.01
@@ -76,7 +94,7 @@ class Game:
             self._running = False
 
     def on_loop(self):
-        self.player.on_loop(self.step_size)
+        self.player.on_loop(self.step_size, self.food.coords)
         if self.check_food():
             self.food = Food([rand.uniform(0, self.width), rand.uniform(0, self.height)])
             self.score += 1
