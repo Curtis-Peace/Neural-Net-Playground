@@ -1,27 +1,34 @@
 import random as rand
 import math
 
-def logistic(layer, weight, bias):
+def logistic(layer, weights, bias):
     sum = 0
-    for neuron in layer:
-        sum += neuron.get_value()
-    sum *= weight
+    for i in range(len(layer)):
+        sum += layer[i].get_value() * weights[i]
     sum += bias
     return 1 / (1 + math.exp(sum))
 
-def linear(layer, weight, bias):
+def linear(layer, weights, bias):
     sum = 0
-    for neuron in layer:
-        sum += neuron.get_value()
-    sum *= weight
+    for i in range(len(layer)):
+        sum += layer[i].get_value() * weights[i]
     sum += bias
     return sum
 
-def binary(layer, weight, bias):
+def relu(layer, weights, bias):
     sum = 0
-    for neuron in layer:
-        sum += neuron.get_value()
-    sum *= weight
+    for i in range(len(layer)):
+        sum += layer[i].get_value() * weights[i]
+    sum += bias
+    if sum > 0:
+        return sum
+    else:
+        return 0
+
+def binary(layer, weights, bias):
+    sum = 0
+    for i in range(len(layer)):
+        sum += layer[i].get_value() * weights[i]
     sum += bias
     if sum > 0:
         return 1
@@ -57,39 +64,46 @@ class Neuron:
     def __init__(self, activation, layer = None):
         self.layer = layer
         self.activation = activation
-        #randomly decide weight and bias
-        self.weight = rand.random()
-        self.bias = rand.random()
-        #randomly decide sign
-        if(rand.random() > 0.5):
-            self.weight *= -1
-        if(rand.random() > 0.5):
-            self.bias *= -1
+
+        if self.layer is not None:
+            self.weights = list()
+            for i in range(len(layer)):
+                #randomly decide weight
+                weight = rand.random()
+                
+                #randomly decide sign
+                if(rand.random() > 0.5):
+                    weight *= -1
+                self.weights.append(weight)
+            self.bias = rand.random()
+            if(rand.random() > 0.5):
+                self.bias *= -1
+                
 
     def get_value(self):
         if self.layer is None:
             return self.value
 
-        self.value = self.activation(self.layer, self.weight, self.bias)
+        self.value = self.activation(self.layer, self.weights, self.bias)
         return self.value
 
     def set_value(self, value):
         self.value = value
 
 if __name__ == "__main__":
-    test_net = NeuralNet([2, 20, 4], binary)
+    test_net = NeuralNet([2, 20, 4], relu)
     test_net.input[0].set_value(4)
     test_net.input[1].set_value(6)
 
     out = []
 
     for neuron in test_net.output:
-        out.append(test_net.get_neuron(1, 5).weight)
+        out.append(neuron.get_value())
     print("output before: " + str(out))
 
-    test_net.get_neuron(1, 5).weight = 500
+    test_net.get_neuron(1, 5).weights[0] = 500
 
     out = []
     for neuron in test_net.output:
-        out.append(test_net.get_neuron(1, 5).weight)
+        out.append(neuron.get_value())
     print("output after: " + str(out))
