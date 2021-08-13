@@ -20,7 +20,7 @@ class EvolutionaryAlgorithm:
 
 
     def run_game(self, net):
-        theApp = Game(False, net, 1000)
+        theApp = Game(False, net, 5000)
         return theApp.on_execute()
 
     def get_scores(self):
@@ -28,50 +28,57 @@ class EvolutionaryAlgorithm:
             scores = p.map(self.run_game, self.generation)
             return scores
 
-    def get_average(self, scores):
-        sorted_by_score = sorted(tuple(zip(self.generation, scores)), key = lambda tup: tup[1], reverse = True)
-
+    def get_average(self, sorted_by_score):
         average_net = NeuralNet(self.net_layers, self.net_activation)
         
         #for each hidden layer
-        for i in range(1, len(self.net_layers) - 1):
+        for i in range(1, len(self.net_layers)):
             #for each neuron in hidden layer
             for j in range(self.net_layers[i]):
                 #sum_weight = 0
                 sum_bias = 0
+                num_weights = len(average_net.get_neuron(i, j).weights)
+                new_weights = [0] * num_weights
                 #for each network in top num
                 for k in range(self.num_survive):
-                    #sum_weight += sorted_by_score[k][0].get_neuron(i, j).weight
                     sum_bias += sorted_by_score[k][0].get_neuron(i, j).bias
-                #average_net.get_neuron(i, j).weight = sum_weight / self.num_survive
+                    #for each weight
+                    for l in range(num_weights):
+                        new_weights[l] += average_net.get_neuron(i, j).weights[l] / self.num_survive
+                average_net.get_neuron(i, j).weights = new_weights
                 average_net.get_neuron(i, j).bias = sum_bias / self.num_survive
+
         return average_net
 
-    def new_generation(self, average):
+    def new_generation(self, scores):
+        sorted_by_score = sorted(tuple(zip(self.generation, scores)), key = lambda tup: tup[1], reverse = True)
+        average = self.get_average(sorted_by_score)
         for net in self.generation:
             #for each hidden layer
-            for i in range(1, len(self.net_layers) - 1):
+            for i in range(1, len(self.net_layers)):
                 #for each neuron in hidden layer
                 for j in range(self.net_layers[i]):
+                    #for each weight
                     for k in range(len(net.get_neuron(i, j).weights)):
                         mutation_weight = rand.random() * self.mutation_factor
                         #randomly decide sign
                         if(rand.random() > 0.5):
                             mutation_weight *= -1
-                        net.get_neuron(i, j).weights[k] = average.get_neuron(i, j) + mutation_weight
+                        net.get_neuron(i, j).weights[k] = average.get_neuron(i, j).weights[k] + mutation_weight
                     mutation_bias = rand.random() * self.mutation_factor
                     #randomly decide sign
                     if(rand.random() > 0.5):
                         mutation_bias *= -1
                     net.get_neuron(i, j).bias = average.get_neuron(i, j).bias + mutation_bias
-
+        #preserve top
+        self.generation[0] = sorted_by_score[0][0]
 
     
 if __name__ == "__main__" :
-    ea = EvolutionaryAlgorithm([4, 8, 6, 4], relu, 500, 3, .02)
+    ea = EvolutionaryAlgorithm([4, 20, 20, 4], relu, 500, 5, .02)
     i = 0
     while True:
         scores = ea.get_scores()
         print(i, sorted(scores, reverse=True)[0:15])
-        ea.new_generation(ea.get_average(scores))
+        ea.new_generation(scores)
         i += 1

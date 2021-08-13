@@ -10,9 +10,11 @@ class Player:
         self.velocity = [0,0]
         self.acceleration = 2
         self.p_size = 10
+        self.move_string = ""
 
     def on_loop(self, step_size, food_coords):
-        self.update_velocity(self.get_move(food_coords), step_size)
+        self.get_move(food_coords)
+        self.update_velocity(step_size)
         self.update_coords(step_size)
 
 
@@ -20,28 +22,28 @@ class Player:
         self.coords[0] += self.velocity[0] * step_size
         self.coords[1] += self.velocity[1] * step_size
 
-    def update_velocity(self, move_string, step_size):
-        if 'up' in move_string:
+    def update_velocity(self, step_size):
+        if 'up' in self.move_string:
             self.velocity[1] -= self.acceleration * step_size
-        if 'down' in move_string:
+        if 'down' in self.move_string:
             self.velocity[1] += self.acceleration * step_size
-        if 'left' in move_string:
+        if 'left' in self.move_string:
             self.velocity[0] -= self.acceleration * step_size
-        if 'right' in move_string:
+        if 'right' in self.move_string:
             self.velocity[0] += self.acceleration * step_size
 
     def get_move(self, food_coords):
-        move_string = ''
+        self.move_string = ''
         if self.neural_net is None:
             keys = pygame.key.get_pressed()
             if keys[K_w] or keys[K_UP]:
-                move_string += 'up'
+                self.move_string += 'up'
             if keys[K_s] or keys[K_DOWN]:
-                move_string += 'down'
+                self.move_string += 'down'
             if keys[K_a] or keys[K_LEFT]:
-                move_string += 'left'
+                self.move_string += 'left'
             if keys[K_d] or keys[K_RIGHT]:
-                move_string += 'right'
+                self.move_string += 'right'
         else:
             self.neural_net.input[0].set_value(self.coords[0] - food_coords[0])
             self.neural_net.input[1].set_value(self.coords[1] - food_coords[1])
@@ -49,14 +51,13 @@ class Player:
             self.neural_net.input[3].set_value(self.velocity[1])
 
             if self.neural_net.output[0].get_value() > 0:
-                move_string += 'up'
+                self.move_string += 'up'
             if self.neural_net.output[1].get_value() > 0:
-                move_string += 'down'
+                self.move_string += 'down'
             if self.neural_net.output[2].get_value() > 0:
-                move_string += 'left'
+                self.move_string += 'left'
             if self.neural_net.output[3].get_value() > 0:
-                move_string += 'right'
-        return move_string
+                self.move_string += 'right'
 
     def on_render(self, display):
         pygame.draw.circle(display,(0, 150, 255), self.coords, self.p_size)
@@ -139,5 +140,5 @@ class Game:
 
 if __name__ == "__main__" :
     pygame.init()
-    theApp = Game(True, NeuralNet([4, 10, 10, 4], linear), 10000)
+    theApp = Game(True, NeuralNet([4, 20, 20, 4], relu), 10000)
     theApp.on_execute()
